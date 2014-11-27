@@ -15,6 +15,7 @@ struct Sass_Data_Context* new_context(char* input_path, char* source, void* cook
 import "C"
 import (
 	"errors"
+	"path"
 	"unsafe"
 )
 
@@ -61,6 +62,31 @@ func go_import_cb(url_s *C.char, cookie unsafe.Pointer) unsafe.Pointer {
 	}
 
 	return unsafe.Pointer(c_imports)
+}
+
+// Returns scss files that this could refer to.
+// this issues no syscalls.
+func PossiblePaths(p string) (out []string) {
+	ext := path.Ext(p)
+	base := path.Base(p)
+	dir := path.Dir(p)
+
+	if ext == ".css" {
+		return nil
+	}
+
+	if ext == "" {
+		out = make([]string, 2)
+		out[0] = p + ".scss"
+		out[1] = path.Join(dir, "_"+base+".scss")
+	} else if ext == ".scss" {
+		out = make([]string, 1)
+		out[0] = p
+	} else {
+		panic("uhh")
+	}
+
+	return out
 }
 
 func Compile(inputPath string, source string, cb ImportCallback) (string, error) {

@@ -43,6 +43,17 @@ func findPath(p string) string {
 	return p
 }
 
+func firstPathExists(paths []string) string {
+	for _, p := range paths {
+		//println(i, p)
+		if fileExists(p) {
+			return p
+		}
+	}
+	panic("couldn't find any!")
+	return ""
+}
+
 func check(t *testing.T, inputPath string) {
 	expectedOutputPath := expectedOutputPath(inputPath)
 	if !fileExists(expectedOutputPath) {
@@ -59,13 +70,14 @@ func check(t *testing.T, inputPath string) {
 	output, err := Compile(inputPath, string(source), func(url string) []Import {
 		imports := make([]Import, 1)
 
-		if path.Ext(url) == ".css" {
+		paths := PossiblePaths(path.Join(inputPathDir, url))
+
+		if paths == nil {
 			imports[0].Path = url
 			return imports
 		}
 
-		p := findPath(path.Join(inputPathDir, url))
-
+		p := firstPathExists(paths)
 		imports[0].Path = p
 
 		source_bytes, err := readAll(p)
