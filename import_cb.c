@@ -16,6 +16,12 @@ struct Sass_Data_Context* new_context(char* input_path, char* source, void* cook
 
   struct Sass_Options* options = sass_context_get_options(context);
 
+  // SASS_STYLE_NESTED
+  // SASS_STYLE_EXPANDED
+  // SASS_STYLE_COMPACT
+  // SASS_STYLE_COMPRESSED
+  //sass_option_set_output_style(options, SASS_STYLE_COMPRESSED);
+
   sass_option_set_input_path(options, input_path);
 
   Sass_C_Import_Callback importer = sass_make_importer(import_cb, cookie);

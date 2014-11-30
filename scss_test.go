@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -54,6 +55,60 @@ func firstPathExists(paths []string) string {
 	return ""
 }
 
+type TestLoader struct {
+	Dir string
+}
+
+func (loader TestLoader) Load(importedPath string) []Import {
+	imports := make([]Import, 1)
+
+	paths := PossiblePaths(path.Join(loader.Dir, importedPath))
+
+	if paths == nil {
+		imports[0].Path = importedPath
+		return imports
+	}
+
+	p := firstPathExists(paths)
+	imports[0].Path = p
+
+	source_bytes, err := readAll(p)
+	if err != nil {
+		panic(err)
+	}
+
+	imports[0].Source = string(source_bytes)
+	return imports
+}
+
+// The ruby spec that we're using to test uses the following function to
+// "clean" the output. So we want to reproduce its behavior exactly.
+//
+//  def _clean_output(css)
+//    css.gsub(/\s+/, " ")
+//       .gsub(/ *\{/, " {\n")
+//       .gsub(/([;,]) */, "\\1\n")
+//       .gsub(/ *\} */, " }\n")
+//       .strip
+//  end
+func cleanOutput(css string) string {
+	r1, _ := regexp.Compile(`\s+`)
+	css = r1.ReplaceAllString(css, " ")
+
+	r2, _ := regexp.Compile(` *\{`)
+	css = r2.ReplaceAllString(css, " {\n")
+
+	/*
+		r3, _ := regexp.Compile(`([;,]) *`)
+		css = r3.ReplaceAllString(css, "\\1\n")
+	*/
+
+	r4, _ := regexp.Compile(` *\} *`)
+	css = r4.ReplaceAllString(css, " }\n")
+
+	return strings.TrimSpace(css)
+}
+
 func check(t *testing.T, inputPath string) {
 	expectedOutputPath := expectedOutputPath(inputPath)
 	if !fileExists(expectedOutputPath) {
@@ -65,29 +120,10 @@ func check(t *testing.T, inputPath string) {
 		t.Fatal(err)
 	}
 
-	inputPathDir := path.Dir(inputPath)
-
-	output, err := Compile(inputPath, string(source), func(url string) []Import {
-		imports := make([]Import, 1)
-
-		paths := PossiblePaths(path.Join(inputPathDir, url))
-
-		if paths == nil {
-			imports[0].Path = url
-			return imports
-		}
-
-		p := firstPathExists(paths)
-		imports[0].Path = p
-
-		source_bytes, err := readAll(p)
-		if err != nil {
-			panic(err)
-		}
-
-		imports[0].Source = string(source_bytes)
-		return imports
-	})
+	loader := TestLoader{
+		Dir: path.Dir(inputPath),
+	}
+	output, err := Compile(inputPath, string(source), loader)
 
 	if err != nil {
 		t.Fatal(err)
@@ -99,12 +135,15 @@ func check(t *testing.T, inputPath string) {
 	}
 	expectedOutput := string(expectedOutputBytes)
 
-	if strings.TrimSpace(expectedOutput) != strings.TrimSpace(output) {
-		println("inputPathDir", inputPathDir)
+	expectedOutput = cleanOutput(expectedOutput)
+	output = cleanOutput(output)
+
+	if output != expectedOutput {
+		println("loader.Dir", loader.Dir)
 		println("--------------------output------")
-		print(output)
+		println(output)
 		println("--------------------expected----")
-		print(expectedOutput)
+		println(expectedOutput)
 		println("--------------------------------")
 
 		t.Fatal("expected output does not match output for " + inputPath)

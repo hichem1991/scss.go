@@ -1,7 +1,7 @@
 package scss
 
 /*
-#cgo LDFLAGS: ./libsass/lib/libsass.a -lstdc++
+#cgo LDFLAGS: ./libsass/lib/libsass.a -lc++
 #cgo CPPFLAGS: -I./libsass
 
 #include <sass.h>
@@ -19,18 +19,21 @@ import (
 	"unsafe"
 )
 
-// This is our internal context
-type ctx struct {
-	cb ImportCallback
-}
-
 type Import struct {
 	Path   string
 	Source string // leave blank if import should be passed to css
 	//Map    string
 }
 
-type ImportCallback func(url string) []Import
+type Loader interface {
+	Load(path string) []Import
+}
+
+// This is our internal context
+type internalContext struct {
+	loader   Loader
+	cContext *C.struct_Sass_Context
+}
 
 //export go_import_cb
 func go_import_cb(url_s *C.char, cookie unsafe.Pointer) unsafe.Pointer {
@@ -39,8 +42,9 @@ func go_import_cb(url_s *C.char, cookie unsafe.Pointer) unsafe.Pointer {
 	defer C.free(unsafe.Pointer(unquoted_url))
 	url := C.GoString(unquoted_url)
 
-	context := (*ctx)(cookie)
-	imports := context.cb(url)
+	iContext := (*internalContext)(cookie)
+
+	imports := iContext.loader.Load(url)
 
 	// Copy The golang []Import object into something sass understands.
 	c_imports := C.sass_make_import_list(C.size_t(len(imports)))
@@ -68,8 +72,6 @@ func go_import_cb(url_s *C.char, cookie unsafe.Pointer) unsafe.Pointer {
 // this issues no syscalls.
 func PossiblePaths(p string) (out []string) {
 	ext := path.Ext(p)
-	base := path.Base(p)
-	dir := path.Dir(p)
 
 	if ext == ".css" {
 		return nil
@@ -77,8 +79,8 @@ func PossiblePaths(p string) (out []string) {
 
 	if ext == "" {
 		out = make([]string, 2)
-		out[0] = p + ".scss"
-		out[1] = path.Join(dir, "_"+base+".scss")
+		out[0] = path.Join(path.Dir(p), "_"+path.Base(p)+".scss")
+		out[1] = p + ".scss"
 	} else if ext == ".scss" {
 		out = make([]string, 1)
 		out[0] = p
@@ -89,21 +91,25 @@ func PossiblePaths(p string) (out []string) {
 	return out
 }
 
-func Compile(inputPath string, source string, cb ImportCallback) (string, error) {
+func Compile(inputPath string, source string, loader Loader) (string, error) {
 	input_path_s := C.CString(inputPath)
 	defer C.free(unsafe.Pointer(input_path_s))
 
 	source_s := C.CString(source)
 	defer C.free(unsafe.Pointer(source_s))
 
-	cookie := unsafe.Pointer(&ctx{
-		cb: cb,
-	})
+	iContext := &internalContext{
+		loader: loader,
+	}
+
+	cookie := unsafe.Pointer(iContext)
 
 	data_context := C.new_context(input_path_s, source_s, cookie)
 	defer C.sass_delete_data_context(data_context)
 
 	context := C.sass_data_context_get_context(data_context)
+
+	iContext.cContext = context
 
 	C.sass_compile_data_context(data_context)
 
