@@ -26,6 +26,10 @@ func TestAll(t *testing.T) {
 	}
 
 	for _, inputPath := range matches {
+		if strings.HasPrefix(inputPath, "spec/spec/libsass-todo") {
+			continue
+		}
+
 		println(inputPath)
 		check(t, inputPath)
 	}
