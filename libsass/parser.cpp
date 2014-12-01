@@ -161,7 +161,7 @@ namespace Sass {
           Sass_C_Import_Fn fn = sass_import_get_function(importer);
           void* cookie = sass_import_get_cookie(importer);
           // get null delimited "array" of "external" imports
-          struct Sass_Import** imports = fn(import_path.c_str(), cookie);
+          struct Sass_Import** imports = fn(path.c_str(), import_path.c_str(), cookie);
           struct Sass_Import** includes = imports;
           if (includes) {
             while (*includes) {

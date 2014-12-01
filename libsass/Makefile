@@ -2,8 +2,8 @@ CC       ?= cc
 CXX      ?= g++
 RM       ?= rm -f
 MKDIR    ?= mkdir -p
-CFLAGS   = -Wall -fPIC -O2 $(EXTRA_CFLAGS)
-CXXFLAGS = -std=c++0x -Wall -fPIC -O2 $(EXTRA_CXXFLAGS)
+CFLAGS   = -Wall -fPIC  -g $(EXTRA_CFLAGS)
+CXXFLAGS = -std=c++0x -Wall -fPIC -g $(EXTRA_CXXFLAGS)
 LDFLAGS  = -fPIC $(EXTRA_LDFLAGS)
 
 ifneq (,$(findstring /cygdrive/,$(PATH)))

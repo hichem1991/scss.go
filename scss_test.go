@@ -10,6 +10,25 @@ import (
 	"testing"
 )
 
+func TestBootstrap(t *testing.T) {
+	inputPath := "bootstrap-sass/stylesheets/_bootstrap.scss"
+	source, err := readAll(inputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	loader := TestLoader{
+		Dir: path.Dir(inputPath),
+	}
+	output, err := Compile(inputPath, string(source), loader)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	println(output)
+}
+
 func TestBasicImports(t *testing.T) {
 	inputPath := "spec/spec/basic/14_imports/input.scss"
 	check(t, inputPath)
@@ -50,7 +69,7 @@ func findPath(p string) string {
 
 func firstPathExists(paths []string) string {
 	for _, p := range paths {
-		//println(i, p)
+		println(p)
 		if fileExists(p) {
 			return p
 		}
@@ -63,10 +82,21 @@ type TestLoader struct {
 	Dir string
 }
 
-func (loader TestLoader) Load(importedPath string) []Import {
+func (l TestLoader) Load(parentPath string, importedPath string) []Import {
 	imports := make([]Import, 1)
 
-	paths := PossiblePaths(path.Join(loader.Dir, importedPath))
+	println("parentPath", parentPath)
+	println("importedPath", importedPath)
+
+	var absImportedPath string
+	if path.IsAbs(importedPath) {
+		absImportedPath = importedPath
+	} else {
+		parentDir := path.Dir(parentPath)
+		absImportedPath = path.Join(parentDir, importedPath)
+	}
+
+	paths := PossiblePaths(absImportedPath)
 
 	if paths == nil {
 		imports[0].Path = importedPath
@@ -102,9 +132,9 @@ func cleanOutput(css string) string {
 	r2, _ := regexp.Compile(` *\{`)
 	css = r2.ReplaceAllString(css, " {\n")
 
-	/*
-		r3, _ := regexp.Compile(`([;,]) *`)
-		css = r3.ReplaceAllString(css, "\\1\n")
+	/* uh.. how do i do pattern match replace? too lazy to figure out right now.
+	r3, _ := regexp.Compile(`([;,]) *`)
+	css = r3.ReplaceAllString(css, "\\1\n")
 	*/
 
 	r4, _ := regexp.Compile(` *\} *`)

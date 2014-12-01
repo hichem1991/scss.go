@@ -3,8 +3,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-struct Sass_Import** import_cb(const char* url, void* cookie) {
-  void* import_entries_ptr = go_import_cb((char*)url, cookie);
+struct Sass_Import** import_cb(const char* parentPath,
+                               const char* importPath,
+                               void* cookie) {
+  void* import_entries_ptr = go_import_cb((char*)parentPath,
+                                          (char*)importPath,
+                                          cookie);
   struct Sass_Import** imports = (struct Sass_Import**)(import_entries_ptr);
   return imports;
 }

@@ -15,7 +15,9 @@ struct Sass_C_Import_Descriptor;
 // Typedef defining the custom importer callback
 typedef struct Sass_C_Import_Descriptor (*Sass_C_Import_Callback);
 // Typedef defining the importer c function prototype
-typedef struct Sass_Import** (*Sass_C_Import_Fn) (const char* url, void* cookie);
+typedef struct Sass_Import** (*Sass_C_Import_Fn) (const char* parentPath, 
+                                                  const char* importedPath,
+                                                  void* cookie);
 
 // Creators for custom importer callback (with some additional pointer)
 // The pointer is mostly used to store the callback into the actual binding
