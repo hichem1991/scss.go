@@ -60,19 +60,21 @@ func go_import_cb(parentPath_s *C.char, importPath_s *C.char,
 	// Copy The golang []Import object into something sass understands.
 	c_imports := C.sass_make_import_list(C.size_t(len(imports)))
 	for i, _ := range imports {
-		path_s := C.CString(imports[i].Path)
-		var source_s *C.char
+		var path_s *C.char = nil
+		var source_s *C.char = nil
 
 		// This is so source_s will be NULL. which triggers direct imports???
 		if len(imports[i].Source) > 0 {
 			source_s = C.CString(imports[i].Source)
 		}
 
+		path_s = C.CString(imports[i].Path)
+
 		entry := C.sass_make_import_entry(path_s, source_s, nil)
 		C.sass_import_set_list_entry(c_imports, C.size_t(i), entry)
 
 		// Who owns what? sass has a shitty API
-		//C.free(unsafe.Pointer(path_s))
+		C.free(unsafe.Pointer(path_s))
 		//C.free(unsafe.Pointer(source_s))
 	}
 
