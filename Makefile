@@ -1,12 +1,8 @@
-
-ldflags_linux=-lm -lstdc++
-ldflags_mac=-lc++
-
-UNAME := $(shell uname -s)
-ifeq ($(UNAME),Darwin)
-	ldflags = $(ldflags_mac)
+host := $(shell go env GOHOSTOS)
+ifeq ($(host),darwin)
+	ldflags = -lc++
 else
-	ldflags = $(ldflags_linux)
+	ldflags = -lm -lstdc++
 endif
 
 # We use pkg-config so that we can use absolute paths to the libsass directory
