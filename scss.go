@@ -1,10 +1,7 @@
 package scss
 
 /*
-#cgo LDFLAGS: /Users/ryan/src/github.com/ry/scss.go/libsass/lib/libsass.a -lc++
-#cgo CPPFLAGS: -I./libsass
-#cgo CFLAGS:  -g
-#cgo CXXFLAGS:  -g
+#cgo pkg-config: scss.pc
 
 #include <sass.h>
 #include <sass_context.h>
@@ -12,7 +9,6 @@ package scss
 
 // Defined in import_cb.c
 struct Sass_Data_Context* new_context(char* input_path, char* source, void* cookie);
-
 */
 import "C"
 import (
