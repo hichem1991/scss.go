@@ -1,13 +1,25 @@
+
+ldflags_linux=-lm -lstdc++
+ldflags_mac=-lc++
+
+UNAME := $(shell uname -s)
+ifeq ($(UNAME),Darwin)
+	ldflags = $(ldflags_mac)
+else
+	ldflags = $(ldflags_linux)
+endif
+
 # We use pkg-config so that we can use absolute paths to the libsass directory
 # that don't need to be hard coded in the scss.go file. It would be nice if 
 # the cgo macros in go had some sort of current directory variable. This would
 # eliminiate the need to do this.
+
 define PKG_CONFIG_BODY
 Name: scss.go
 Version: 0.0.1
 Description: scss.go
 Cflags: -g -I$(PWD)/libsass
-Libs:  -lc++ $(PWD)/libsass/lib/libsass.a
+Libs:  $(ldflags) $(PWD)/libsass/lib/libsass.a
 endef
 # why am i exporting this variable? see
 # http://stackoverflow.com/questions/649246/is-it-possible-to-create-a-multi-line-string-variable-in-a-makefile
