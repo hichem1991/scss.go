@@ -82,9 +82,7 @@ type TestLoader struct {
 	Dir string
 }
 
-func (l TestLoader) Load(parentPath string, importedPath string) []Import {
-	imports := make([]Import, 1)
-
+func (l TestLoader) Load(parentPath string, importedPath string) (out Import) {
 	println("parentPath", parentPath)
 	println("importedPath", importedPath)
 
@@ -99,20 +97,21 @@ func (l TestLoader) Load(parentPath string, importedPath string) []Import {
 	paths := PossiblePaths(absImportedPath)
 
 	if paths == nil {
-		imports[0].Path = importedPath
-		return imports
+		// return error?
+		out.Path = importedPath
+		return out
 	}
 
 	p := firstPathExists(paths)
-	imports[0].Path = p
+	out.Path = p
 
 	source_bytes, err := readAll(p)
 	if err != nil {
 		panic(err)
 	}
 
-	imports[0].Source = string(source_bytes)
-	return imports
+	out.Source = string(source_bytes)
+	return out
 }
 
 // The ruby spec that we're using to test uses the following function to
