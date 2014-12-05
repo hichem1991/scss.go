@@ -13,6 +13,7 @@ struct Sass_Data_Context* new_context(char* input_path, char* source, void* cook
 import "C"
 import (
 	"errors"
+	"math/rand"
 	"path"
 	"unsafe"
 )
@@ -29,13 +30,15 @@ type Loader interface {
 
 // This is our internal context
 type internalContext struct {
+	name     string
 	loader   Loader
 	cContext *C.struct_Sass_Context
 }
 
 //export go_import_cb
 func go_import_cb(parentPath_s *C.char, importPath_s *C.char,
-	cookie unsafe.Pointer) unsafe.Pointer {
+	cookie unsafe.Pointer) **C.struct_Sass_Import {
+	iContext := (*internalContext)(cookie)
 
 	// For some reason the importPath_s comes in quoted.
 	unquoted_importPath := C.sass_string_unquote(importPath_s)
@@ -46,16 +49,17 @@ func go_import_cb(parentPath_s *C.char, importPath_s *C.char,
 	defer C.free(unsafe.Pointer(unquoted_parentPath))
 	parentPath := C.GoString(unquoted_parentPath)
 
-	iContext := (*internalContext)(cookie)
-
 	/*
 		options := C.sass_context_get_options(iContext.cContext)
 		outputPath_s := C.sass_option_get_output_path(options)
 		outputPath := C.GoString(outputPath_s)
 		println("outputPath", outputPath)
-
 	*/
+
+	//println(">>>>>>> before", parentPath, importPath)
+	//println(">>>>>>> loader:", string(iContext.name))
 	import_ := iContext.loader.Load(parentPath, importPath)
+	//println("<<<<<<< after", parentPath, importPath)
 
 	// Copy The golang []Import object into something sass understands.
 	c_imports := C.sass_make_import_list(C.size_t(1))
@@ -75,7 +79,7 @@ func go_import_cb(parentPath_s *C.char, importPath_s *C.char,
 	C.free(unsafe.Pointer(path_s))
 	//C.free(unsafe.Pointer(source_s))
 
-	return unsafe.Pointer(c_imports)
+	return c_imports
 }
 
 // Returns scss files that this could refer to.
@@ -99,6 +103,8 @@ func PossiblePaths(p string) (out []string) {
 	return out
 }
 
+var sassContextMap = make(map[int32]*internalContext)
+
 func Compile(inputPath string, source string, loader Loader) (string, error) {
 	input_path_s := C.CString(inputPath)
 	defer C.free(unsafe.Pointer(input_path_s))
@@ -106,9 +112,19 @@ func Compile(inputPath string, source string, loader Loader) (string, error) {
 	source_s := C.CString(source)
 	defer C.free(unsafe.Pointer(source_s))
 
-	iContext := &internalContext{
+	// This is to work around a crash I was hitting where
+	// the internalContext would be GCed (I think) while we are
+	// inside of sass_compile_data_context, despite the object
+	// being rooted in this scope.
+	// It seems attaching it to this global map fixes the bug?
+	sassContextId := rand.Int31()
+	sassContextMap[sassContextId] = &internalContext{
+		name:   inputPath,
 		loader: loader,
 	}
+	defer delete(sassContextMap, sassContextId)
+
+	iContext := sassContextMap[sassContextId]
 
 	cookie := unsafe.Pointer(iContext)
 
