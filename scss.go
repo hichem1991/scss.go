@@ -8,7 +8,7 @@ package scss
 #include <stdlib.h>
 
 // Defined in import_cb.c
-struct Sass_Data_Context* new_context(char* input_path, char* source, void* cookie);
+struct Sass_Data_Context* new_context(char* input_path, char* source, int compress, void* cookie);
 */
 import "C"
 import (
@@ -105,7 +105,7 @@ func PossiblePaths(p string) (out []string) {
 
 var sassContextMap = make(map[int32]*internalContext)
 
-func Compile(inputPath string, source string, loader Loader) (string, error) {
+func Compile(inputPath string, source string, compress bool, loader Loader) (string, error) {
 	input_path_s := C.CString(inputPath)
 	defer C.free(unsafe.Pointer(input_path_s))
 
@@ -128,7 +128,14 @@ func Compile(inputPath string, source string, loader Loader) (string, error) {
 
 	cookie := unsafe.Pointer(iContext)
 
-	data_context := C.new_context(input_path_s, source_s, cookie)
+	var compress_c C.int
+	if compress {
+		compress_c = 1
+	} else {
+		compress_c = 0
+	}
+
+	data_context := C.new_context(input_path_s, source_s, compress_c, cookie)
 	defer C.sass_delete_data_context(data_context)
 
 	context := C.sass_data_context_get_context(data_context)

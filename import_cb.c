@@ -13,7 +13,7 @@ struct Sass_Import** import_cb(const char* parentPath,
   return imports;
 }
 
-struct Sass_Data_Context* new_context(char* input_path, char* source, void* cookie) {
+struct Sass_Data_Context* new_context(char* input_path, char* source, int compress, void* cookie) {
   struct Sass_Data_Context* data_context = sass_make_data_context(source);
 
   struct Sass_Context* context = sass_data_context_get_context(data_context);
@@ -24,7 +24,9 @@ struct Sass_Data_Context* new_context(char* input_path, char* source, void* cook
   // SASS_STYLE_EXPANDED
   // SASS_STYLE_COMPACT
   // SASS_STYLE_COMPRESSED
-  //sass_option_set_output_style(options, SASS_STYLE_COMPRESSED);
+  if (compress != 0) {
+    sass_option_set_output_style(options, SASS_STYLE_COMPRESSED);
+  }
 
   sass_option_set_input_path(options, input_path);
 

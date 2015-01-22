@@ -20,7 +20,7 @@ func TestBootstrap(t *testing.T) {
 	loader := TestLoader{
 		Dir: path.Dir(inputPath),
 	}
-	output, err := Compile(inputPath, string(source), loader)
+	output, err := Compile(inputPath, string(source), false, loader)
 
 	if err != nil {
 		t.Fatal(err)
@@ -156,7 +156,7 @@ func check(t *testing.T, inputPath string) {
 	loader := TestLoader{
 		Dir: path.Dir(inputPath),
 	}
-	output, err := Compile(inputPath, string(source), loader)
+	output, err := Compile(inputPath, string(source), false, loader)
 
 	if err != nil {
 		t.Fatal(err)
